@@ -1,0 +1,29 @@
+[project]
+name = "rag-with-trpg"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "DeJavLiusMac", email = "lmo9903@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.121.0",
+    "httpx>=0.28.1",
+    "markdownify>=1.2.3",
+    "numpy>=2.5.2",
+    "sentence-transformers>=5.7.0",
+]
+
+[project.scripts]
+rag-with-trpg = "rag_with_trpg:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.2",
+]
