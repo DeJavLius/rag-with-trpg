@@ -1,6 +1,10 @@
 import numpy as np
+from sentence_transformers import SentenceTransformer
 import anthropic
 client = anthropic.Anthropic()
+
+# 1. Load a pretrained Sentence Transformer model
+model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 # 던전월드 액션 페이지 3개 문단
 DOCS: list[str] = [
@@ -275,7 +279,11 @@ def chunk(text: str, size: int = 200, overlap: int = 0) -> list[str]:
         i, j, c = 0, 0, 0
         while j < times:
             c = min(i + size, text_length)
-            result.append(text[i:c])
+            sentence = text[i:c]
+
+            if len(sentence) > 0:
+                result.append(sentence)
+
             i = i + chunk_size
             j += 1
 
@@ -288,16 +296,21 @@ def chunk(text: str, size: int = 200, overlap: int = 0) -> list[str]:
 ### 개선 ###
 # 한국어 모델 3종 비교, 차원, 정규화 이해
 def embed(texts: list[str]) -> np.ndarray:
+    embedded_data = model.encode(texts)
+
+    return embedded_data
 
 # 코사인 유사도 상위 k개. DB 없이 정규화 후 행렬 곱 한줄
 ### 개선 ###
 # numpy > pgvector / Qdrant, HNSW 파라미터 실측
-# def search(query: mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
+def search(query: mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
+
+def search_numpy(query: mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
 
 # 컨텍스트를 프롬프트에 넣고 LLM 호출
 ### 개선 ###
 # 프롬프트 설계, top-k 근거, 출처 표시
-# def anwser(query: str, ctx: list[str]) -> str:
+def anwser(query: str, ctx: list[str]) -> str:
 
 # 질문 입력 > 검색 > 답변 출력
 ### 개선 ###
