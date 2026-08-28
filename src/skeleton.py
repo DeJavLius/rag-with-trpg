@@ -311,26 +311,17 @@ def embed(texts: list[str]) -> np.ndarray:
 ### 개선 ###
 # numpy > pgvector / Qdrant, HNSW 파라미터 실측
 def search(query: str, mat: np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
-    index_result: list[int] = []
-
     v_query = embed([query]).flatten()
     n_query = v_query / np.linalg.norm(v_query)
     n_mat = mat / np.linalg.norm(mat, axis=1)[:, np.newaxis]
     mat_result = n_mat @ n_query
-
-    similarity = np.argsort(mat_result)
-    print(mat_result, similarity)
-
-    for i, s in enumerate(similarity):
-        if s < k:
-            index_result.append(i)
-
-    return [chunks[i] for i in index_result]
+    top_ranks = np.argsort(-mat_result)[:k]
+    return [chunks[i] for i in top_ranks]
 
 def search_by_model(query: str, mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
     v_query = embed([query])
     scores = model.similarity(v_query, mat)
-    score = np.array(scores).flatten()
+    score = np.array(scores)[0]
     top_index = np.argsort(-score)[:k]
     return [chunks[i] for i in top_index]
 
@@ -340,14 +331,15 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
     n_query = v_query / np.linalg.norm(v_query)
     n_mat = mat / np.linalg.norm(mat, axis=1)[:, np.newaxis]
     mat_result = n_mat @ n_query
-    similarity = np.argsort(mat_result)
+    v_ranks = np.argsort(-mat_result)
 
     scores = model.similarity(_query, mat)
     print(mat_result, scores)
-    score = np.array(scores).flatten()
-    score = np.argsort(-score)
+    print(np.allclose(mat_result, scores))
+    f_scores = np.array(scores)[0]
+    ranks = np.argsort(-f_scores)
 
-    print(np.allclose(mat_result, score))
+    print(v_ranks, ranks)
 
 # 컨텍스트를 프롬프트에 넣고 LLM 호출
 ### 개선 ###
@@ -362,11 +354,11 @@ def main():
     question = '마법사'
     chunked = chunk(DOCS[0])
     vector_data = embed(chunked)
-    # result = search(question, vector_data, chunked)
-    # result_answer = search_by_model(question, vector_data, chunked)
-    # print(result)
-    # print(result_answer)
-    print(search_test(question, vector_data))
+    result = search(question, vector_data, chunked)
+    result_answer = search_by_model(question, vector_data, chunked)
+    print(result)
+    print(result_answer)
+    search_test(question, vector_data)
 
 if __name__ == '__main__':
     main()
