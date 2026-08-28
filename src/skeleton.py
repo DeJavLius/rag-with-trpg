@@ -1,7 +1,7 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import anthropic
-client = anthropic.Anthropic()
+from google import genai
+client = genai.Client()
 
 # 1. Load a pretrained Sentence Transformer model
 model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -344,21 +344,25 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
 # 컨텍스트를 프롬프트에 넣고 LLM 호출
 ### 개선 ###
 # 프롬프트 설계, top-k 근거, 출처 표시
-# def anwser(query: str, ctx: list[str]) -> str:
+def answer(query: str, ctx: list[str]) -> str:
+    context_text = "\n\n".join(ctx)
+    interaction = client.interactions.create(
+        model="gemini-3.6-flash",
+        system_instruction="주어진 컨텍스트만 근거로 답하십시오. 컨텍스트에 없으면 모른다고 답하십시오.",
+        input=f"컨텍스트:\n{context_text}\n\n질문: {query}",
+    )
+    return interaction.output_text
 
 # 질문 입력 > 검색 > 답변 출력
 ### 개선 ###
 # FastAPI로 노출
 def main():
     print(f"모델 토큰 길이: {model.max_seq_length}")
-    question = '마법사'
-    chunked = chunk(DOCS[0])
+    question = '마법사가 사용하는 주문은?'
+    chunked = chunk(DOCS[2])
     vector_data = embed(chunked)
     result = search(question, vector_data, chunked)
-    result_answer = search_by_model(question, vector_data, chunked)
-    print(result)
-    print(result_answer)
-    search_test(question, vector_data)
+    print(answer(question, result))
 
 if __name__ == '__main__':
     main()
