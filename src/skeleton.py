@@ -1,10 +1,12 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from google import genai
-client = genai.Client()
+# from google import genai
+# client = genai.Client()
 
 # 1. Load a pretrained Sentence Transformer model
 model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+model_max_size: int = 0
+over_max_size: int = 0
 
 # 던전월드 액션 페이지 3개 문단
 DOCS: list[str] = [
@@ -296,6 +298,8 @@ def chunk(text: str, size: int = 200, overlap: int = 0) -> list[str]:
 ### 개선 ###
 # 한국어 모델 3종 비교, 차원, 정규화 이해
 def embed(texts: list[str]) -> np.ndarray:
+    over_max_size = 0
+
     embedded_data = model.encode(texts)
     tok = model.tokenizer
 
@@ -303,8 +307,13 @@ def embed(texts: list[str]) -> np.ndarray:
         token = tok.encode(text)
         token_size = len(token)
         size = len(text)
-        print(f"토큰 크기: {token_size}, 원문 크기: {size}, 자/토큰 비율: {size/token_size}")
 
+        # 실측 level
+        print(f"토큰 크기: {token_size}, 원문 크기: {size}, 자/토큰 비율: {size/token_size}")
+        if token_size > model_max_size:
+            over_max_size += 1
+
+    print(f"초과율: {over_max_size/len(texts)}")
     return embedded_data
 
 # 코사인 유사도 상위 k개. DB 없이 정규화 후 행렬 곱 한줄
@@ -315,15 +324,16 @@ def search(query: str, mat: np.ndarray, chunks: list[str], k: int = 3) -> list[s
     n_query = v_query / np.linalg.norm(v_query)
     n_mat = mat / np.linalg.norm(mat, axis=1)[:, np.newaxis]
     mat_result = n_mat @ n_query
+    print(f"similarity result: {mat_result}")
     top_ranks = np.argsort(-mat_result)[:k]
-    return [chunks[i] for i in top_ranks]
+    return [str(chunks[i]) for i in top_ranks]
 
 def search_by_model(query: str, mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
     v_query = embed([query])
     scores = model.similarity(v_query, mat)
     score = np.array(scores)[0]
     top_index = np.argsort(-score)[:k]
-    return [chunks[i] for i in top_index]
+    return [str(chunks[i]) for i in top_index]
 
 def search_test(query: str, mat: np.ndarray, k: int = 3):
     _query = embed([query])
@@ -336,33 +346,45 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
     scores = model.similarity(_query, mat)
     print(mat_result, scores)
     print(np.allclose(mat_result, scores))
-    f_scores = np.array(scores)[0]
+    f_scores = np.asarray(scores)[0]
     ranks = np.argsort(-f_scores)
 
     print(v_ranks, ranks)
 
 # 컨텍스트를 프롬프트에 넣고 LLM 호출
+# 비용으로 일단 정지
 ### 개선 ###
 # 프롬프트 설계, top-k 근거, 출처 표시
-def answer(query: str, ctx: list[str]) -> str:
-    context_text = "\n\n".join(ctx)
-    interaction = client.interactions.create(
-        model="gemini-3.6-flash",
-        system_instruction="주어진 컨텍스트만 근거로 답하십시오. 컨텍스트에 없으면 모른다고 답하십시오.",
-        input=f"컨텍스트:\n{context_text}\n\n질문: {query}",
-    )
-    return interaction.output_text
+# def answer(query: str, ctx: list[str]) -> str:
+#     context_text = "\n\n".join(ctx)
+#     interaction = client.interactions.create(
+#         model="gemini-3.6-flash",
+#         system_instruction="주어진 컨텍스트만 근거로 답하십시오. 컨텍스트에 없으면 모른다고 답하십시오.",
+#         input=f"컨텍스트:\n{context_text}\n\n질문: {query}",
+#     )
+#     return interaction.output_text
 
 # 질문 입력 > 검색 > 답변 출력
 ### 개선 ###
 # FastAPI로 노출
 def main():
-    print(f"모델 토큰 길이: {model.max_seq_length}")
+    model_max_size = model.max_seq_length
+    print(f"모델 토큰 길이: {model_max_size}")
+
     question = '마법사가 사용하는 주문은?'
-    chunked = chunk(DOCS[2])
-    vector_data = embed(chunked)
-    result = search(question, vector_data, chunked)
-    print(answer(question, result))
+    t1 = chunk(DOCS[1], size=220)
+    t2 = chunk(DOCS[1], size=240)
+    t3 = chunk(DOCS[1], size=260)
+    eb1 = embed(t1)
+    eb2 = embed(t2)
+    eb3 = embed(t3)
+    print(search(question, eb1, t1))
+    print(search(question, eb2, t2))
+    print(search(question, eb3, t3))
+    search_test(question, eb1)
+    search_test(question, eb2)
+    search_test(question, eb3)
+    # print(answer(question, result))
 
 if __name__ == '__main__':
     main()
