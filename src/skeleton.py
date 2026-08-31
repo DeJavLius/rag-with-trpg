@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 # 1. Load a pretrained Sentence Transformer model
 model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-model_max_size: int = 0
+model_max_size: int = model.max_seq_length
 over_max_size: int = 0
 
 # 던전월드 액션 페이지 3개 문단
@@ -297,11 +297,13 @@ def chunk(text: str, size: int = 200, overlap: int = 0) -> list[str]:
 # (n, d) 배열 리턴. SentenceTransformer 로드는 함수 밖에서 1회
 ### 개선 ###
 # 한국어 모델 3종 비교, 차원, 정규화 이해
-def embed(texts: list[str]) -> np.ndarray:
-    over_max_size = 0
+def embed(texts: list[str], log_flag: bool = False) -> np.ndarray:
+    _over_max_size: int = 0
 
     embedded_data = model.encode(texts)
     tok = model.tokenizer
+    if log_flag:
+        print(embedded_data)
 
     for text in texts:
         token = tok.encode(text)
@@ -311,9 +313,10 @@ def embed(texts: list[str]) -> np.ndarray:
         # 실측 level
         print(f"토큰 크기: {token_size}, 원문 크기: {size}, 자/토큰 비율: {size/token_size}")
         if token_size > model_max_size:
-            over_max_size += 1
+            _over_max_size += 1
 
-    print(f"초과율: {over_max_size/len(texts)}")
+    if log_flag:
+        print(f"{_over_max_size}, {len(texts)}, 초과율: {_over_max_size/len(texts)}")
     return embedded_data
 
 # 코사인 유사도 상위 k개. DB 없이 정규화 후 행렬 곱 한줄
@@ -368,16 +371,15 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
 ### 개선 ###
 # FastAPI로 노출
 def main():
-    model_max_size = model.max_seq_length
     print(f"모델 토큰 길이: {model_max_size}")
 
     question = '마법사가 사용하는 주문은?'
     t1 = chunk(DOCS[1], size=220)
     t2 = chunk(DOCS[1], size=240)
     t3 = chunk(DOCS[1], size=260)
-    eb1 = embed(t1)
-    eb2 = embed(t2)
-    eb3 = embed(t3)
+    eb1 = embed(t1, True)
+    eb2 = embed(t2, True)
+    eb3 = embed(t3, True)
     print(search(question, eb1, t1))
     print(search(question, eb2, t2))
     print(search(question, eb3, t3))
