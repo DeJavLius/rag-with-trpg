@@ -370,7 +370,7 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
 # 질문 입력 > 검색 > 답변 출력
 ### 개선 ###
 # FastAPI로 노출
-def main():
+def execute():
     print(f"모델 토큰 길이: {model_max_size}")
 
     question = '마법사가 사용하는 주문은?'
@@ -387,6 +387,3 @@ def main():
     search_test(question, eb2)
     search_test(question, eb3)
     # print(answer(question, result))
-
-if __name__ == '__main__':
-    main()

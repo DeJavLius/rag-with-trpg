@@ -1,4 +1,4 @@
-from skeleton import execute
+from .skeleton import execute
 
 def main() -> None:
     execute()
