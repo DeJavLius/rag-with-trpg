@@ -1,5 +1,5 @@
 import unittest
-import rag_with_trpg.crawl as crawl
+
 
 class MyTestCase(unittest.TestCase):
     def test_extract_drops_navigation(self):
