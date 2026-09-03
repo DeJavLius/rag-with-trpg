@@ -6,7 +6,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import clear_dir
+from rag_with_trpg.crawl.util import clear_dir, save_file
 
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):
@@ -48,10 +48,9 @@ def target_crawl(config: CrawlConfig):
     for link in links:
         file_name = link.replace(config.url_keyword, "").removesuffix("/")
         page_html = fetch(config.site_url + quote(link))
-        new_page_path = config.raw_path / f"{file_name.replace('-', '')}.html"
-        new_page_path.parent.mkdir(parents=True, exist_ok=True)
-        new_page_path.write_text(page_html, encoding="utf-8")
-        print(f"저장 확인 - 파일명: {file_name} 위치: {new_page_path}")
+        save_file(
+            file_name, config.raw_path / f"{file_name.replace('-', '')}.html", page_html
+        )
         time.sleep(1)
 
 

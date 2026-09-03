@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import clear_dir
+from rag_with_trpg.crawl.util import clear_dir, save_file
 
 SITE_TITLE_SEP = " - "
 
@@ -24,10 +24,7 @@ def extracting(config: CrawlConfig, raw_files: list[Path]):
 
         if not is_index_page(content):
             # print(f"title: {title}, content: {content}")
-            new_page_path = config.md_path / f"{title}.md"
-            new_page_path.parent.mkdir(parents=True, exist_ok=True)
-            new_page_path.write_text(content, encoding="utf-8")
-            print(f"저장 확인 - 파일명: {title}.md")
+            save_file(title, config.md_path / f"{title}.md", content)
         else:
             print(f"미저장 인덱싱 파일: {title}, {len(content)}")
 

@@ -30,3 +30,20 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.2",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+# 네트워크를 타는 테스트는 이 마커를 달고 기본 실행에서 뺀다 (-m "not network")
+markers = ["network: 실제 사이트에 요청한다"]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py312"
+# corpora/ 는 CC BY 코퍼스 산출물이다 (D-06). 포매터가 만지지 않는다
+extend-exclude = ["corpora"]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "preserve"
