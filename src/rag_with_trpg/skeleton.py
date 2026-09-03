@@ -1,10 +1,13 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
+
 # from google import genai
 # client = genai.Client()
 
 # 1. Load a pretrained Sentence Transformer model
-model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+model = SentenceTransformer(
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
 model_max_size: int = model.max_seq_length
 over_max_size: int = 0
 
@@ -266,6 +269,7 @@ _________는 세상에 대해 몰라도 너무 모른다. 내가 가르칠 수 �
 """,
 ]
 
+
 # 단순 size 글자 slice
 ### 개선 ###
 # fixed / recursive / semantic 3종 구현, 비교
@@ -291,6 +295,7 @@ def chunk(text: str, size: int = 200, overlap: int = 0) -> list[str]:
 
     return result
 
+
 # 각 청크가 모델 입력 한계 안에 들어가는지 확인한다.
 # tokenizer는 model.tokenizer로 꺼낼 수 있다.
 # 출력: 청크별 토큰 수, 모델 max_seq_length, 초과한 청크의 비율
@@ -311,13 +316,16 @@ def embed(texts: list[str], log_flag: bool = False) -> np.ndarray:
         size = len(text)
 
         # 실측 level
-        print(f"토큰 크기: {token_size}, 원문 크기: {size}, 자/토큰 비율: {size/token_size}")
+        print(
+            f"토큰 크기: {token_size}, 원문 크기: {size}, 자/토큰 비율: {size / token_size}"
+        )
         if token_size > model_max_size:
             _over_max_size += 1
 
     if log_flag:
-        print(f"{_over_max_size}, {len(texts)}, 초과율: {_over_max_size/len(texts)}")
+        print(f"{_over_max_size}, {len(texts)}, 초과율: {_over_max_size / len(texts)}")
     return embedded_data
+
 
 # 코사인 유사도 상위 k개. DB 없이 정규화 후 행렬 곱 한줄
 ### 개선 ###
@@ -331,12 +339,16 @@ def search(query: str, mat: np.ndarray, chunks: list[str], k: int = 3) -> list[s
     top_ranks = np.argsort(-mat_result)[:k]
     return [str(chunks[i]) for i in top_ranks]
 
-def search_by_model(query: str, mat:np.ndarray, chunks: list[str], k: int = 3) -> list[str]:
+
+def search_by_model(
+    query: str, mat: np.ndarray, chunks: list[str], k: int = 3
+) -> list[str]:
     v_query = embed([query])
     scores = model.similarity(v_query, mat)
     score = np.array(scores)[0]
     top_index = np.argsort(-score)[:k]
     return [str(chunks[i]) for i in top_index]
+
 
 def search_test(query: str, mat: np.ndarray, k: int = 3):
     _query = embed([query])
@@ -354,6 +366,7 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
 
     print(v_ranks, ranks)
 
+
 # 컨텍스트를 프롬프트에 넣고 LLM 호출
 # 비용으로 일단 정지
 ### 개선 ###
@@ -367,13 +380,14 @@ def search_test(query: str, mat: np.ndarray, k: int = 3):
 #     )
 #     return interaction.output_text
 
+
 # 질문 입력 > 검색 > 답변 출력
 ### 개선 ###
 # FastAPI로 노출
 def execute():
     print(f"모델 토큰 길이: {model_max_size}")
 
-    question = '마법사가 사용하는 주문은?'
+    question = "마법사가 사용하는 주문은?"
     t1 = chunk(DOCS[1], size=220)
     t2 = chunk(DOCS[1], size=240)
     t3 = chunk(DOCS[1], size=260)
