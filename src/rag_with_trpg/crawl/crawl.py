@@ -1,17 +1,16 @@
-import shutil
 import time
 from pathlib import Path
 from urllib.parse import quote
-
 import httpx
 from bs4 import BeautifulSoup
 
 from rag_with_trpg.crawl.config import CrawlConfig
+from rag_with_trpg.crawl.util import clear_dir
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):
-  crawler_restart_flag = len(raw_files) == 0
+  crawler_restart_flag = len(raw_files) == 0 or config.re_crawl
   if crawler_restart_flag:
-    print(f"initial: 수집 파일 없음, 최초 수집 시작: {config.raw_path}")
+    print(f"initial: {"재수집 수행" if config.re_crawl else "수집 파일 없음"}, 최초 수집 시작: {config.raw_path}")
     target_crawl(config)
   else:
     for raw in raw_files:
@@ -47,16 +46,6 @@ def target_crawl(config: CrawlConfig):
     new_page_path.write_text(page_html, encoding="utf-8")
     print(f"저장 확인 - 파일명: {file_name} 위치: {new_page_path}")
     time.sleep(1)
-
-def clear_dir(path: Path) -> None:
-  if not path.is_dir():
-    return
-
-  for child in path.iterdir():
-    if child.is_dir() and not child.is_symlink():
-      shutil.rmtree(child)
-    else:
-      child.unlink()
 
 def fetch(url: str) -> str:
   r = httpx.get(url, follow_redirects=True, timeout=5)

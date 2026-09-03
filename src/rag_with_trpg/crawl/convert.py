@@ -1,15 +1,19 @@
 from pathlib import Path
 from bs4 import BeautifulSoup
-from markdownify import markdownify
+from markdownify import markdownify as md
 
 from rag_with_trpg.crawl.config import CrawlConfig
+from rag_with_trpg.crawl.util import clear_dir
 
 SITE_TITLE_SEP = " - "
 
 def converter(config: CrawlConfig, raw_files: list[Path], md_files: list[Path]):
-  if len(md_files) == 0:
+  if not len(md_files) > 0 or config.re_create:
+    clear_dir(config.md_path)
     extracting(config, raw_files)
-  print(content_evaluate(config, md_files))
+
+  re_md_files = list(config.md_path.rglob("*.md"))
+  print(len(re_md_files))
 
 def extracting(config: CrawlConfig, raw_files: list[Path]):
   config.md_path.mkdir(parents=True, exist_ok=True)
@@ -17,28 +21,28 @@ def extracting(config: CrawlConfig, raw_files: list[Path]):
   for raw in raw_files:
     html = raw.read_text(encoding="utf-8")
     title, content = extract(html)
-    # print(f"title: {title}, content: {content}")
-    new_page_path = config.md_path / f"{title}.md"
-    new_page_path.parent.mkdir(parents=True, exist_ok=True)
-    new_page_path.write_text(content, encoding="utf-8")
-    print(f"저장 확인 - 파일명: {title} 위치: {new_page_path}")
 
-def content_evaluate(config: CrawlConfig, md_files: list[Path]):
-  result: list[str] = []
-  for md in md_files:
-    content = md.read_text(encoding="utf-8")
-    if is_index_page(content):
-      result.append(md.name)
-  return result
+    if not is_index_page(content):
+      # print(f"title: {title}, content: {content}")
+      new_page_path = config.md_path / f"{title}.md"
+      new_page_path.parent.mkdir(parents=True, exist_ok=True)
+      new_page_path.write_text(content, encoding="utf-8")
+      print(f"저장 확인 - 파일명: {title}.md")
+    else:
+      print(f"미저장 인덱싱 파일: {title}, {len(content)}")
 
 def extract(html: str) -> tuple[str, str]:
   soup = BeautifulSoup(html, 'html.parser')
   title: str = title_decision(soup)
   contents = soup.find_all('section')
 
+  indexed_content: list[str] = []
+  for content in contents:
+      indexed_content.append(str(content))
+
   result: str = "".join(
-    markdownify(str(section), heading_style="ATX") + "\n"
-      for section in contents
+    md(str(section), heading_style="ATX", strip=['a', 'img']).replace("\xa0", " ") + "\n"
+      for section in indexed_content
   )
 
   return title, result

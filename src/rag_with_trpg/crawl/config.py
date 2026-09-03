@@ -9,6 +9,8 @@ class CrawlConfig:
   url_keyword: str
   raw_path: Path
   md_path: Path
+  re_crawl: bool
+  re_create: bool
 
   @classmethod
   def from_env(cls) -> "CrawlConfig":
@@ -17,4 +19,6 @@ class CrawlConfig:
       url_keyword=require_env("URL_KEYWORD"),
       raw_path=require_path("CORPORA_DUNGEONWORLD_PATH", "raw"),
       md_path=require_path("CORPORA_DUNGEONWORLD_PATH", "md"),
-    )
+      re_crawl=require_env("RE_CRAWL") == "1",
+      re_create=require_env("RE_CREATE") == "1",
+  )

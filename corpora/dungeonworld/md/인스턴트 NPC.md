@@ -404,8 +404,6 @@ PC들이 우연히 만난 사람이 갑자기 중요해져 버리는 경우가 �
 100. 생기발랄.
 이름
 핀바르, 하이윈, 애꾸눈, 알호로, 아를론, 예브, 슬라임, 조카트, 유잉, 림, 포이, 밀로, 데릴, 메들린, 아스트라펠, 델윈, 펠리아나, 다마라, 시스트라날르, 펜드렐, 멜리안드르, 다골리르, 발드릭, 리나, 던윅, 윌렘, 에드윈, 플로리안, 세라핀, 쿠오라, 샤를로트, 릴리, 라몬드, 카산드라, 두르가, 아엘파르, 게르다, 루르고쉬, 비요른, 드루몬드, 헬가, 시그룬, 프레야, 웨슬리, 브린튼, 존, 사라, 호손, 엘리즈, 클라크, 레노르, 표트르, 달리아, 카르미네, 히코락스, 에탄웨, 시나텔, 데마노르, 메놀리르, 미스랄란, 타에로스, 아에고르, 태너, 던스턴, 로즈, 아이비, 로바르드, 맵, 티슬, 퍽, 앤, 세라, 엘라나, 오벨리스, 헤란, 실라, 안다나, 셔반, 아지즈, 펠린, 시벨, 닐스, 웨이, 오즈루크, 수르투르, 브룬힐다, 아니카, 야노스, 그레타, 딤, 런드릭, 야를, 크소토크, 엘로히르, 샤라세스, 하스리스, 셰바랄, 카데우스, 엘다르, 키스라셋, 텔리안, 피네간, 올리브, 랜돌프, 바틀비, 오브리, 볼드윈, 베카, 호크, 루디거, 그레고르, 브리안느, 월튼.
-![](https://lh3.googleusercontent.com/sitesv/AG8ngQXs4MQEO1ieMTYfnqe5Yb9lHKvdFr4PlzoswhblxJTiivAfMdJhHsdBpmnTm-VAtyxqXQaPeiyzfYgESO9ZxQouwuuWkQDxneHpJoMQYBefCfmh0z0mZY3gQpTv47w9Yk9C4kndiy4B3fNBilXPRaumP9rMb48P3vTKsZS9oFUQKwI6VXRqA2V9SyZ213d43KuUqqq2m0XoG0026Jo8uYwn45VfHS93PlkyE49GLHk=w1280)
+김성일(도서출판 초여명)에 의해 작성된 던전월드 한국어공개판은 크리에이티브 커먼즈 저작자표시 3.0 Unported 라이선스에 따라 이용할 수 있습니다.
 
-[김성일(도서출판 초여명)](https://sites.google.com/view/dwtemporary/%ED%99%88)에 의해 작성된 던전월드 한국어공개판은 [크리에이티브 커먼즈 저작자표시 3.0 Unported 라이선스](https://creativecommons.org/licenses/by/3.0/deed.ko)에 따라 이용할 수 있습니다.
-
-<http://book.dwgazetteer.com/>의 저작물에 기반하고 있습니다.
+http://book.dwgazetteer.com/의 저작물에 기반하고 있습니다.

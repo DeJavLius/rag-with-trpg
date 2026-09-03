@@ -8,13 +8,13 @@ def main() -> None:
   load_config()
   config = CrawlConfig.from_env()
   raw_files = list(config.raw_path.rglob("*.html"))
-  md_files = list(config.md_path.rglob("*.md"))
+  check_md_files = list(config.md_path.rglob("*.md"))
 
   print("crawl: start raw file check and crawling")
   crawler(config, raw_files)
 
   print("crawl: start convert raw html into markdown")
-  converter(config, raw_files, md_files)
+  converter(config, raw_files, check_md_files)
 
 if __name__ == "__main__":
   main()
