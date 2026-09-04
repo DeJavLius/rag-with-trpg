@@ -18,7 +18,7 @@ def crawler(config: CrawlConfig, raw_files: list[Path]):
         print(
             f"initial: {'재수집 수행' if config.re_crawl else '수집 파일 없음'}, 최초 수집 시작: {config.raw_path}"
         )
-        target_crawl(config)
+        _target_crawl(config)
     else:
         for raw in raw_files:
             html = raw.read_text(encoding="utf-8")
@@ -39,10 +39,10 @@ def crawler(config: CrawlConfig, raw_files: list[Path]):
 
         if crawler_restart_flag:
             clear_dir(config.raw_path)
-            target_crawl(config)
+            _target_crawl(config)
 
 
-def target_crawl(config: CrawlConfig):
+def _target_crawl(config: CrawlConfig):
     config.raw_path.mkdir(parents=True, exist_ok=True)
 
     home_html = fetch_handler(config, config.url_keyword)
@@ -59,14 +59,14 @@ def target_crawl(config: CrawlConfig):
 
 def fetch_handler(config: CrawlConfig, link: str) -> str:
     try:
-        return fetch(config.site_url + quote(link))
+        return _fetch(config.site_url + quote(link))
     except httpx.HTTPError as e:
         print(e)
         clear_dir(config.raw_path)
         raise httpx.HTTPError("request failed, stop fetching")
 
 
-def fetch(url: str) -> str:
+def _fetch(url: str) -> str:
     # raise_for_status() 가 없으면 4xx/5xx 본문이 그대로 코퍼스가 된다.
     # crawler() 의 h1 == "404" 사후 검사는 5xx·타임아웃을 못 잡는다 — D-21 2번의 HTTP 판.
     r = httpx.get(

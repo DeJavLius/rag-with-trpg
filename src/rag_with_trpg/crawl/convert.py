@@ -10,13 +10,17 @@ from rag_with_trpg.crawl.util import clear_dir, save_file
 SITE_TITLE_SEP = " - "
 
 
-def converter(config: CrawlConfig, raw_files: list[Path], md_files: list[Path]):
+def converter(
+    config: CrawlConfig, raw_files: list[Path], md_files: list[Path]
+) -> list[str]:
     if not len(md_files) > 0 or config.re_create:
         clear_dir(config.md_path)
-        extracting(config, raw_files)
+        return _extracting(config, raw_files)
+
+    return []
 
 
-def extracting(config: CrawlConfig, raw_files: list[Path]):
+def _extracting(config: CrawlConfig, raw_files: list[Path]) -> list[str]:
     config.md_path.mkdir(parents=True, exist_ok=True)
 
     exclude_titles: list[str] = []
@@ -38,9 +42,11 @@ def extracting(config: CrawlConfig, raw_files: list[Path]):
 
     if len(exclude_titles) != EXPECTED_EXCLUDED:
         raise RuntimeError(
-            f"인덱스 제외가 {len(exclude_titles)}건이다 (기대 {EXPECTED_EXCLUDED}건). "
-            f"임계값보다 extract() 가 깨졌을 가능성을 먼저 본다 — D-04 · D-21 4번"
+            f"인덱스 제외: {len(exclude_titles)}건 (기대 {EXPECTED_EXCLUDED}건). "
+            f"extract issue tracking recommended"
         )
+
+    return exclude_titles
 
 
 def extract(html: str) -> tuple[str, str]:
