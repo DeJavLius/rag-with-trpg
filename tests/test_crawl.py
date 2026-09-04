@@ -1,60 +1,44 @@
-from dataclasses import replace
+from conftest import EXPECTED_PAGES, URL_KEYWORD
 
-import pytest
-from bs4 import BeautifulSoup
+from rag_with_trpg.crawl.crawl import enroll_all_links
 
-from rag_with_trpg.crawl.convert import (
-    converter,
-    extract,
-    is_index_page,
-    title_decision,
-)
-
-
-def test_converter_writes_md(tmp_config, raw_files):
-    converter(tmp_config, raw_files, [])
-
-    assert list(tmp_config.md_path.glob("*.md"))
+"""
+title: claude 작성 python script — 테스트 본문
+content: D-20 조건부 (2026-09-04 개정). 「무엇을 잠그나」와 기대값은 직접 정하고,
+         pytest 문법·assert 표현은 AI 가 적었다.
+         수집(crawl.py) 소관. 변환(convert.py) 테스트는 test_convert.py 에 있다.
+"""
 
 
-def test_converter_skips_when_md_exists(tmp_config, raw_files):
-    converter(tmp_config, raw_files, [tmp_config.md_path / "already.md"])
+def test_enroll_all_links_collects_every_page(home_html):
+    """홈 한 장에서 39개가 나온다 — 재귀 크롤링이 필요 없다는 전제를 잠근다.
 
-    assert not tmp_config.md_path.exists()
+    1주차 완료 조건 「raw/ 에 HTML 39개」의 회귀 가드다.
+    """
+    links = enroll_all_links(home_html, URL_KEYWORD)
 
-
-@pytest.mark.parametrize("re_create", [True, False])
-def test_re_create_controls_rebuild(make_config, raw_files, re_create):
-    config = make_config(re_create=re_create)
-    converter(config, raw_files, [config.md_path / "already.md"])
-
-    assert config.md_path.is_dir() is re_create
+    assert len(links) == EXPECTED_PAGES
 
 
-def test_replace_overrides_single_flag(tmp_config, raw_files):
-    config = replace(tmp_config, re_create=True)
-    converter(config, raw_files, [config.md_path / "already.md"])
+def test_enroll_all_links_is_deduped_and_sorted(home_html):
+    links = enroll_all_links(home_html, URL_KEYWORD)
 
-    assert list(config.md_path.glob("*.md"))
-
-
-def test_title_decision_without_separator(home_html):
-    soup = BeautifulSoup(home_html, "html.parser")
-
-    assert title_decision(soup) == soup.title.get_text(strip=True)
+    assert links == sorted(set(links))
 
 
-def test_title_decision_strips_site_name(body_html):
-    soup = BeautifulSoup(body_html, "html.parser")
-    title = title_decision(soup)
+def test_enroll_all_links_drops_external(home_html):
+    """사이트 밖 링크가 섞이면 크롤이 남의 서버를 때린다."""
+    links = enroll_all_links(home_html, URL_KEYWORD)
 
-    assert " - " not in title
-    assert soup.title.get_text(strip=True).endswith(title)
+    assert all(link.startswith(URL_KEYWORD) for link in links)
 
 
-def test_is_index_page_boundary(index_html, body_html):
-    _, index_md = extract(index_html)
-    _, body_md = extract(body_html)
+def test_enroll_all_links_keeps_hyphens(home_html):
+    """슬러그의 하이픈이 링크 단계에서는 살아 있다.
 
-    assert is_index_page(index_md)
-    assert not is_index_page(body_md)
+    raw 파일명은 `replace('-', '')` 로 하이픈을 지우므로 (비가역),
+    원본 슬러그를 얻을 수 있는 곳은 여기와 og:url 뿐이다 — meta_mapped.slug_of 참조.
+    """
+    links = enroll_all_links(home_html, URL_KEYWORD)
+
+    assert any("-" in link.removeprefix(URL_KEYWORD) for link in links)

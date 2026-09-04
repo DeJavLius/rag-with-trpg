@@ -8,6 +8,9 @@ from bs4 import BeautifulSoup
 from rag_with_trpg.crawl.config import CrawlConfig
 from rag_with_trpg.crawl.util import clear_dir, save_file
 
+# 식별 가능한 UA + 연락처. 차단당했을 때 원인을 알 수 있고, 크롤링 에티켓이기도 하다.
+USER_AGENT = "rag-with-trpg/0.1 (+https://github.com/DeJavLius/rag-with-trpg)"
+
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):
     crawler_restart_flag = len(raw_files) == 0 or config.re_crawl
@@ -42,20 +45,34 @@ def crawler(config: CrawlConfig, raw_files: list[Path]):
 def target_crawl(config: CrawlConfig):
     config.raw_path.mkdir(parents=True, exist_ok=True)
 
-    home_html = fetch(config.site_url + quote(config.url_keyword))
+    home_html = fetch_handler(config, config.url_keyword)
     links = enroll_all_links(home_html, config.url_keyword)
 
     for link in links:
         file_name = link.replace(config.url_keyword, "").removesuffix("/")
-        page_html = fetch(config.site_url + quote(link))
+        page_html = fetch_handler(config, link)
         save_file(
             file_name, config.raw_path / f"{file_name.replace('-', '')}.html", page_html
         )
         time.sleep(1)
 
 
+def fetch_handler(config: CrawlConfig, link: str) -> str:
+    try:
+        return fetch(config.site_url + quote(link))
+    except httpx.HTTPError as e:
+        print(e)
+        clear_dir(config.raw_path)
+        raise httpx.HTTPError("request failed, stop fetching")
+
+
 def fetch(url: str) -> str:
-    r = httpx.get(url, follow_redirects=True, timeout=5)
+    # raise_for_status() 가 없으면 4xx/5xx 본문이 그대로 코퍼스가 된다.
+    # crawler() 의 h1 == "404" 사후 검사는 5xx·타임아웃을 못 잡는다 — D-21 2번의 HTTP 판.
+    r = httpx.get(
+        url, follow_redirects=True, timeout=5, headers={"User-Agent": USER_AGENT}
+    )
+    r.raise_for_status()
     return r.text
 
 

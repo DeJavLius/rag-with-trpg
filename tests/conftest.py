@@ -15,6 +15,11 @@ INDEX_PAGE = "직업.html"  # 인덱스 — strip 적용 175자
 HOME_PAGE = "홈.html"  # 홈 — 972자. <title> 에 " - " 가 없는 유일한 페이지
 BODY_PAGE = "액션.html"  # 본문 — 헤딩 24개
 
+# 기대값 — 근거는 [[decisions phase 1]] / [[phase 1 log]] §2. 숫자를 여기 한 곳에만 둔다.
+URL_KEYWORD = "/view/dwtemporary/"
+EXPECTED_PAGES = 39  # 홈에서 긁히는 내부 링크 = raw HTML 개수
+EXPECTED_MD = 38  # 39 − 인덱스 1건 (D-04)
+
 INDEX_MD = "직업.md"  # 인덱스 — strip 적용 175자
 HOME_MD = "던전월드 한국어 공개판 임시 웹페이지.md"  # 홈 — 972자. <title> 에 " - " 가 없는 유일한 페이지
 BODY_MD = "액션.md"  # 본문 — 헤딩 24개
