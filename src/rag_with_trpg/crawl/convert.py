@@ -18,6 +18,7 @@ def converter(config: CrawlConfig, raw_files: list[Path], md_files: list[Path]):
 def extracting(config: CrawlConfig, raw_files: list[Path]):
     config.md_path.mkdir(parents=True, exist_ok=True)
 
+    indexed_content: list[str] = []
     for raw in raw_files:
         html = raw.read_text(encoding="utf-8")
         title, content = extract(html)
@@ -26,7 +27,9 @@ def extracting(config: CrawlConfig, raw_files: list[Path]):
             # print(f"title: {title}, content: {content}")
             save_file(title, config.md_path / f"{title}.md", content)
         else:
-            print(f"미저장 인덱싱 파일: {title}, {len(content)}")
+            indexed_content.append(title)
+
+    print("미 저장 파일 목록: ".join([f"{t}.md " for t in indexed_content]))
 
 
 def extract(html: str) -> tuple[str, str]:
