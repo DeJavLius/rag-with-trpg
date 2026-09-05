@@ -1,7 +1,10 @@
 import shutil
 from pathlib import Path
 
-head_sections: str = "###### "
+from bs4 import BeautifulSoup
+
+HEAD_SECTIONS: str = "###### "
+SITE_TITLE_SEP = " - "
 
 
 def save_file(file_name: str, path: Path, content: str):
@@ -21,6 +24,16 @@ def clear_dir(path: Path) -> None:
             child.unlink()
 
 
+def title_decision(soup: BeautifulSoup) -> str:
+    if soup.title is None:
+        return "_"
+
+    title = soup.title.get_text(strip=True)
+    _, sep, page = title.partition(SITE_TITLE_SEP)
+
+    return page.strip() if sep else title
+
+
 def md_head_counter(path: Path) -> tuple[str, int, list[int]]:
     title = path.stem
     markdown = path.read_text(encoding="utf-8")
@@ -33,7 +46,7 @@ def header_counting(content: str) -> tuple[int, list[int]]:
 
     head_count: list[int] = [0 for _ in range(6)]
     for h in range(6):
-        header = head_sections[h:]
+        header = HEAD_SECTIONS[h:]
         head_count[5 - h] = content.count(header)
         content = content.replace(header, "")
 
@@ -41,4 +54,12 @@ def header_counting(content: str) -> tuple[int, list[int]]:
 
 
 def serialize(values: list) -> str:
-    return "".join([f"[{i + 1}: {v}] " for i, v in enumerate(values)])
+    return "".join([f"h{i + 1}: ({v}) " if v > 0 else "" for i, v in enumerate(values)])
+
+
+def find_file(path_list: list[Path], keyword: str) -> Path | None:
+    for p in path_list:
+        if p.stem == keyword:
+            return p
+
+    return None

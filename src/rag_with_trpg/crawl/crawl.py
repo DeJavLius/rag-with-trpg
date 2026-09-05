@@ -8,9 +8,6 @@ from bs4 import BeautifulSoup
 from rag_with_trpg.crawl.config import CrawlConfig
 from rag_with_trpg.crawl.util import clear_dir, save_file
 
-# 식별 가능한 UA + 연락처. 차단당했을 때 원인을 알 수 있고, 크롤링 에티켓이기도 하다.
-USER_AGENT = "rag-with-trpg/0.1 (+https://github.com/DeJavLius/rag-with-trpg)"
-
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):
     crawler_restart_flag = len(raw_files) == 0 or config.re_crawl
@@ -59,18 +56,16 @@ def _target_crawl(config: CrawlConfig):
 
 def fetch_handler(config: CrawlConfig, link: str) -> str:
     try:
-        return _fetch(config.site_url + quote(link))
+        return _fetch(config.site_url + quote(link), config.user_agent)
     except httpx.HTTPError as e:
         print(e)
         clear_dir(config.raw_path)
         raise httpx.HTTPError("request failed, stop fetching")
 
 
-def _fetch(url: str) -> str:
-    # raise_for_status() 가 없으면 4xx/5xx 본문이 그대로 코퍼스가 된다.
-    # crawler() 의 h1 == "404" 사후 검사는 5xx·타임아웃을 못 잡는다 — D-21 2번의 HTTP 판.
+def _fetch(url: str, user: str) -> str:
     r = httpx.get(
-        url, follow_redirects=True, timeout=5, headers={"User-Agent": USER_AGENT}
+        url, follow_redirects=True, timeout=5, headers={"User-Agent": user}
     )
     r.raise_for_status()
     return r.text

@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 from bs4 import BeautifulSoup
-from conftest import EXPECTED_MD
+from conftest import EXPECTED_MD, INDEX_TITLE
 
 from rag_with_trpg.crawl import convert
 from rag_with_trpg.crawl.convert import (
@@ -64,12 +64,31 @@ def test_excluded_count_is_one(tmp_config, raw_files):
     assert len(list(tmp_config.md_path.glob("*.md"))) == EXPECTED_MD
 
 
-def test_guard_stops_when_nothing_excluded(tmp_config, raw_files, monkeypatch):
-    """제외가 0건이면 조용히 통과하지 않고 멈춘다 (D-21 4번)."""
+def test_converter_returns_excluded_titles(tmp_config, raw_files):
+    """제외 목록을 돌려준다 — 판정은 이 반환값으로 하고, 출력에 기대지 않는다 (D-04).
+
+    ♻️ 09-05: 가드가 converter 안의 RuntimeError 에서 __main__ 의 인덱스 대조로
+    옮겨갔다. converter 의 책임은 「무엇이 제외됐는지 알려주는 것」까지다.
+    """
+    excluded = converter(tmp_config, raw_files, [])
+
+    assert excluded == [INDEX_TITLE]
+
+
+def test_converter_reports_zero_when_threshold_disabled(
+    tmp_config, raw_files, monkeypatch
+):
+    """제외가 0건이면 빈 리스트가 나온다 — 호출부가 판정할 수 있어야 한다 (D-21 4번).
+
+    is_index_page 가 무력화되면(임계값 실수·strip 누락) 제외가 0건이 된다.
+    그 상태가 조용히 「정상」으로 보이지 않는지 잠근다.
+    """
     monkeypatch.setattr(convert, "is_index_page", lambda markdown: False)
 
-    with pytest.raises(RuntimeError, match="인덱스 제외가 0건"):
-        converter(tmp_config, raw_files, [])
+    excluded = converter(tmp_config, raw_files, [])
+
+    assert excluded == []
+    assert len(list(tmp_config.md_path.glob("*.md"))) == EXPECTED_MD + 1
 
 
 # ─── converter 분기 ──────────────────────────────────────────────────

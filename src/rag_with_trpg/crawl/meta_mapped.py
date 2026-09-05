@@ -1,11 +1,13 @@
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from urllib.parse import unquote
 
 from bs4 import BeautifulSoup
+from bs4.element import AttributeValueList
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import header_counting
+from rag_with_trpg.crawl.util import md_head_counter, title_decision, find_file, serialize
 
 """
 title: claude 작성 python script — 시그니처 전용
@@ -13,42 +15,73 @@ content: D-20 조건부. 시그니처·docstring·함정만 AI 가 적었고 본
          목적은 provenance(원문 URL) 보존 — D-07 응답 각주와 3주차 청킹 메타데이터의 재료.
 """
 
-# D-04 — 인덱스 페이지는 「직업」 1건. raw 39 → md 38.
-# 코퍼스가 바뀌면 D-04 를 재판정한 뒤에 이 값을 고친다. 조용히 늘리지 않는다.
-# 내 판단: meta data file을 형식 자유롭게 네이밍을 정하게 하고 json으로 고정
-EXPECTED_EXCLUDED = 1
 
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class PageEntry:
     slug: str  # PK. "직업/마법사/마법사-주문" — 하이픈이 살아 있는 원본
     parent: str | None  # 부모의 slug. 루트면 None
-    title: str  # "마법사 주문" — <title> 에서 (D-28)
+    title: str | None  # "마법사 주문" — <title> 에서 (D-28)
+    def_title: str  # 변환 제목
     url: str  # 퍼센트 인코딩된 og:url 원본. D-07 각주에 그대로 붙일 값
     raw: str  # "raw/직업/마법사/마법사주문.html"
     md: str | None  # "md/마법사 주문.md" — 제외되면 None
     excluded: str | None  # "index" | None
     chars: int
-    headings: list[int]  # 인덱스 + 1 위치가 header 크기
+    headings: list[int] | None  # 인덱스 + 1 위치가 header 크기
+
+    @classmethod
+    def from_page(cls, config: CrawlConfig, raw_path: Path, md_path: Path | None, def_title: str) -> "PageEntry":
+        base_path = str(Path(config.base_path).absolute())
+        html = raw_path.read_text(encoding="utf-8")
+        soup = BeautifulSoup(html, "html.parser")
+
+        raw = str(raw_path).replace(base_path, "")
+        url = unquote(source_url(soup))
+        slug = slug_of(url, config.site_url + config.url_keyword)
+        parent = parent_of(slug)
+        title: str | None = None
+        md: str | None = None
+        exclude: str | None = "index"
+        chars: int = 0
+        headings: list[int] | None = None
+
+        if md_path is not None:
+            exclude = None
+            md = str(md_path).replace(base_path, "")
+            title, chars, headings = md_head_counter(md_path)
+
+        return cls(
+            slug=slug,
+            parent=parent,
+            title=title,
+            def_title=def_title,
+            url=url,
+            raw=raw,
+            md=md,
+            excluded=exclude,
+            chars=chars,
+            headings=headings
+        )
 
 
-def save_index(path: Path, config: CrawlConfig, entries: list[PageEntry]) -> None:
-    """메타데이터 파일을 쓴다. `pages` 는 **slug 를 키로 하는 평면 map** 이다.
+def mapper(config: CrawlConfig, raw_path_list: list[Path], md_path_list: list[Path]) -> None:
+    page_entries: list[PageEntry] = []
 
-    중첩 트리로 안 쓰는 이유 — 소비자가 전부 단건 조회다. D-07 응답 각주(청크 → url),
-    3주차 청킹 메타데이터, D-26 라우팅(조상 체인) 셋 다 아래로 순회하지 않는다.
+    for raw_path in raw_path_list:
+        raw_html = raw_path.read_text(encoding="utf-8")
+        soup = BeautifulSoup(raw_html, "html.parser")
+        md_title = title_decision(soup)
+        md_file = find_file(md_path_list, md_title)
+        page_entry = PageEntry.from_page(config=config, raw_path=raw_path, md_path=md_file, def_title=md_title)
+        page_entries.append(page_entry)
 
-    위치는 md_path 바깥이라 `converter()` 첫 줄의 `clear_dir(config.md_path)` 에 안 지워진다.
-    파일명은 호출자가 path 로 정한다 — 이름은 설정, 확장자는 json 고정.
+    save_index(config, page_entries)
 
-    ⚠️ slug 는 키이므로 값 안에 다시 넣지 않는다. 두 곳이 어긋날 자리를 만들지 않는다.
-    ⚠️ `json.dump(..., ensure_ascii=False, indent=2, sort_keys=True)`.
-       ensure_ascii 기본값(True)으로 쓰면 한글이 \\uc9c1\\uc5c5 이 되어 git diff 가 안 읽힌다.
-       sort_keys 는 덤이 아니다 — 슬러그 사전순이면 **부모가 자식 바로 앞에 와서**
-       평면 map 도 눈으로 트리처럼 읽힌다.
-    ⚠️ counts 에 raw / md / excluded 를 함께 넣는다. S1 건수 가드의 판정 재료다.
-    """
-    raise NotImplementedError
+
+def save_index(config: CrawlConfig, page_entries: list[PageEntry]) -> None:
+    meta_name = config.meta_file
+    meta_file = Path(config.base_path + f"{meta_name}.json")
+    meta_file.write_text(json.dumps([asdict(e) for e in page_entries], ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def source_url(soup: BeautifulSoup) -> str:
@@ -57,13 +90,47 @@ def source_url(soup: BeautifulSoup) -> str:
     if url is None:
         raise RuntimeError("url not found")
 
-    return url.get("content")
+    url_content = url.get("content")
+    if url_content is None:
+        raise RuntimeError(f"content not founded: {url}")
+
+    return url_content[0] if isinstance(url_content, AttributeValueList) else url_content
 
 
 def slug_of(url: str, url_keyword: str) -> str:
-    return unquote(url).replace(url_keyword, "")
+    return url.replace(url_keyword, "")
 
 
 def parent_of(slug: str) -> str | None:
     nodes = slug.split("/")
     return None if len(nodes) == 1 else nodes[-2]
+
+
+def load_meta(config: CrawlConfig) -> list[PageEntry]:
+    meta_file = Path(config.base_path + f"{config.meta_file}.json")
+    meta_json = json.loads(meta_file.read_text(encoding="utf-8"))
+    return [PageEntry(**d) for d in meta_json]
+
+
+def exclude_file_check(config: CrawlConfig) -> tuple[int, list[str]]:
+    meta_infos: list[PageEntry] = load_meta(config)
+
+    count = 0
+    exclude_files: list[str] = []
+    for m in meta_infos:
+        if m.excluded is not None:
+            count += 1
+            exclude_files.append(m.def_title)
+
+    return count, exclude_files
+
+
+def show_markdown_heading(config: CrawlConfig):
+    page_entries = load_meta(config)
+
+    count = 0
+    for page_entry in page_entries:
+        if page_entry.excluded is None:
+            count += 1
+            print(f"{page_entry.title} - chars: {page_entry.chars}, heading: {serialize([] if page_entry.headings is None else page_entry.headings)}")
+

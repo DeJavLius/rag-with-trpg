@@ -4,20 +4,19 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.meta_mapped import EXPECTED_EXCLUDED
-from rag_with_trpg.crawl.util import clear_dir, save_file
-
-SITE_TITLE_SEP = " - "
+from rag_with_trpg.crawl.util import clear_dir, save_file, title_decision
 
 
 def converter(
     config: CrawlConfig, raw_files: list[Path], md_files: list[Path]
 ) -> list[str]:
+    exclude_list: list[str] = []
+
     if not len(md_files) > 0 or config.re_create:
         clear_dir(config.md_path)
-        return _extracting(config, raw_files)
+        exclude_list = _extracting(config, raw_files)
 
-    return []
+    return exclude_list
 
 
 def _extracting(config: CrawlConfig, raw_files: list[Path]) -> list[str]:
@@ -29,22 +28,14 @@ def _extracting(config: CrawlConfig, raw_files: list[Path]) -> list[str]:
         title, content = extract(html)
 
         if not is_index_page(content):
-            # print(f"title: {title}, content: {content}")
             save_file(title, config.md_path / f"{title}.md", content)
         else:
             exclude_titles.append(title)
 
-    # D-04 「반드시 출력한다」 — 0건이어도 찍는다. 침묵하면 그게 곧 버그다.
     print(
         f"미 저장 파일 {len(exclude_titles)}건: "
         f"{"".join([f"{t}.md " for t in exclude_titles])}"
     )
-
-    if len(exclude_titles) != EXPECTED_EXCLUDED:
-        raise RuntimeError(
-            f"인덱스 제외: {len(exclude_titles)}건 (기대 {EXPECTED_EXCLUDED}건). "
-            f"extract issue tracking recommended"
-        )
 
     return exclude_titles
 
@@ -65,16 +56,6 @@ def extract(html: str) -> tuple[str, str]:
     )
 
     return title, result
-
-
-def title_decision(soup: BeautifulSoup) -> str:
-    if soup.title is None:
-        return "_"
-
-    title = soup.title.get_text(strip=True)
-    _, sep, page = title.partition(SITE_TITLE_SEP)
-
-    return page.strip() if sep else title
 
 
 def is_index_page(markdown: str) -> bool:
