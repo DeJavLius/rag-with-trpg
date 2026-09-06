@@ -1,3 +1,3 @@
-from rag_with_trpg.diagnose.config from DiagnoseConfig
+from rag_with_trpg.diagnose.config import DiagnoseConfig
 
 __all__ = ["DiagnoseConfig"]
