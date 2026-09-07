@@ -104,16 +104,16 @@ def test_converter_skips_when_md_exists(tmp_config, raw_files):
     assert not tmp_config.md_path.exists()
 
 
-@pytest.mark.parametrize("re_create", [True, False])
-def test_re_create_controls_rebuild(make_config, raw_files, re_create):
-    config = make_config(re_create=re_create)
+@pytest.mark.parametrize("do_create", [True, False])
+def test_do_create_controls_rebuild(make_config, raw_files, do_create):
+    config = make_config(do_create=do_create)
     converter(config, raw_files, [config.md_path / "already.md"])
 
-    assert config.md_path.is_dir() is re_create
+    assert config.md_path.is_dir() is do_create
 
 
 def test_replace_overrides_single_flag(tmp_config, raw_files):
-    config = replace(tmp_config, re_create=True)
+    config = replace(tmp_config, do_create=True)
     converter(config, raw_files, [config.md_path / "already.md"])
 
     assert list(config.md_path.glob("*.md"))

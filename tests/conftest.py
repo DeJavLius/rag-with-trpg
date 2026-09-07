@@ -71,12 +71,15 @@ def make_config(tmp_path: Path, raw_dir: Path):
     """CrawlConfig 를 만들어 주는 팩토리. 호출 시점에 인자를 넣는다.
 
     fixture 는 인자를 직접 못 받으므로, 인자가 필요한 설정은 팩토리로 감싼다.
-    from_env() 를 거치지 않으므로 .env 없이도 돈다 (D-15).
+    from_config() 를 거치지 않으므로 .env 없이도 돈다 (D-15).
     site_url / url_keyword 는 변환 경로에서 쓰이지 않아 고정값을 넣는다.
     md_path·base_path 만 임시 디렉터리로 돌려 실제 corpora/ 를 건드리지 않는다.
+
+    JSON 3종은 Path 다 — 이름 문자열이 아니라 확정된 경로를 들고 다닌다.
+    셋을 서로 다른 파일로 두는 것이 load_config() 중복 검사와 같은 취지다.
     """
 
-    def _make(*, re_crawl: bool = False, re_create: bool = False) -> CrawlConfig:
+    def _make(*, do_crawl: bool = False, do_create: bool = False) -> CrawlConfig:
         return CrawlConfig(
             site_url="https://example.invalid",
             url_keyword=URL_KEYWORD,
@@ -84,9 +87,11 @@ def make_config(tmp_path: Path, raw_dir: Path):
             base_path=f"{tmp_path}/",
             raw_path=raw_dir,
             md_path=tmp_path / "md",
-            index_file="index",
-            re_crawl=re_crawl,
-            re_create=re_create,
+            index_file=tmp_path / "index.json",
+            meta_file=tmp_path / "meta.json",
+            meta_result_file=tmp_path / "diagnose.json",
+            do_crawl=do_crawl,
+            do_create=do_create,
         )
 
     return _make
@@ -122,7 +127,7 @@ def corpus_config(corpus: Path) -> CrawlConfig:
     """축소 코퍼스를 가리키는 설정.
 
     base_path 끝의 슬래시는 .env.shared 의 CORPORA_DUNGEONWORLD_PATH 와 같은 형태다.
-    save_index / load_meta 가 문자열 결합으로 경로를 만들므로 이 형태를 맞춘다.
+    PageEntry.from_page 가 base_path 를 문자열로 잘라내므로 이 형태를 맞춘다.
     """
     return CrawlConfig(
         site_url=SITE_URL,
@@ -131,9 +136,11 @@ def corpus_config(corpus: Path) -> CrawlConfig:
         base_path=f"{corpus}/",
         raw_path=corpus / "raw",
         md_path=corpus / "md",
-        index_file="index",
-        re_crawl=False,
-        re_create=False,
+        index_file=corpus / "index.json",
+        meta_file=corpus / "meta.json",
+        meta_result_file=corpus / "diagnose.json",
+        do_crawl=False,
+        do_create=False,
     )
 
 
@@ -151,11 +158,13 @@ def md_files(corpora_root: Path) -> list[Path]:
 
 
 @pytest.fixture(scope="session")
-def meta_path(corpora_root: Path) -> Path:
-    """실제 인덱스 파일. 파일명은 .env.shared 의 META_FILE 을 따른다 (D-35)."""
-    import os
+def index_path() -> Path:
+    """실제 인덱스 파일. 경로는 .env.shared 의 INDEX_FILE 에서 나온다 (D-35).
 
-    from rag_with_trpg.config import load_config
+    파일명을 여기서 조립하지 않고 Config 에게 물어본다 — 조립을 두 곳에 두면
+    09-07 의 파일명 드리프트가 테스트에서 안 잡힌다.
+    """
+    from rag_with_trpg.config import Config, load_config
 
     load_config()
-    return corpora_root / f"{os.environ['INDEX_FILE']}.json"
+    return Config.from_config().index_file

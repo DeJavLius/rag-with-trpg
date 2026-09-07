@@ -10,10 +10,10 @@ from rag_with_trpg.crawl.util import clear_dir, save_file
 
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):
-    crawler_restart_flag = len(raw_files) == 0 or config.re_crawl
+    crawler_restart_flag = len(raw_files) == 0 or config.do_crawl
     if crawler_restart_flag:
         print(
-            f"initial: {'재수집 수행' if config.re_crawl else '수집 파일 없음'}, 최초 수집 시작: {config.raw_path}"
+            f"initial: {'재수집 수행' if config.do_crawl else '수집 파일 없음'}, 최초 수집 시작: {config.raw_path}"
         )
         _target_crawl(config)
     else:

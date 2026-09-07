@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -14,18 +15,49 @@ content: 작업 규칙에 따라 crawl 본문 작성은 요청하지 않고 env 
 """
 
 
+@dataclass(frozen=True)
+class Config:
+    base_path: str
+    raw_path: Path
+    md_path: Path
+    index_file: Path
+    meta_file: Path
+    meta_result_file: Path
+
+    @classmethod
+    def from_config(cls) -> "Config":
+        return cls(
+            base_path=require_env("CORPORA_DUNGEONWORLD_PATH"),
+            raw_path=pre_require_path("raw"),
+            md_path=pre_require_path("md"),
+            index_file=require_json_env("INDEX_FILE"),
+            meta_file=require_json_env("META_FILE"),
+            meta_result_file=require_json_env("META_RESULT_FILE"),
+        )
+
+
 def load_config() -> None:
     """공용 설정을 먼저 읽고, 로컬 비밀값이 덮어쓰게 한다."""
     load_dotenv(ROOT / ".env.shared")
     load_dotenv(ROOT / ".env", override=True)
 
-    if (
-        len({os.getenv(I_F).strip(), os.getenv(M_F).strip(), os.getenv(M_R_F).strip()})
-        < 3
-    ):
+    if len({require_env(I_F), require_env(M_F), require_env(M_R_F)}) < 3:
         raise RuntimeError(
             f"환경변수 {I_F}, {M_F}, {M_R_F} 중 같은 값이 있습니다. 각각의 파일명을 지정해 주세요."
         )
+
+
+def require_json_env(name: str) -> Path:
+    """파일명 환경변수를 코퍼스 루트 밑의 `<이름>.json` 경로로 확정한다.
+
+    joinpath(".json") 은 확장자가 아니라 `<이름>/.json` 이라는 경로 한 칸을 더 만든다.
+    파일명 결합은 문자열로 하고, 루트 밖 검사는 require_path 에 맡긴다.
+    """
+    return pre_require_path(f"{require_env(name)}.json")
+
+
+def require_bool_env(name: str) -> bool:
+    return require_env(name) == "1"
 
 
 def require_env(name: str) -> str:
@@ -38,6 +70,10 @@ def require_env(name: str) -> str:
         )
 
     return value
+
+
+def pre_require_path(*parts: str) -> Path:
+    return require_path("CORPORA_DUNGEONWORLD_PATH", *parts)
 
 
 def require_path(name: str, *parts: str) -> Path:

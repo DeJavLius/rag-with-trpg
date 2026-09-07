@@ -90,9 +90,7 @@ def mapper(
 
 
 def save_index(config: CrawlConfig, page_entries: list[PageEntry]) -> None:
-    meta_name = config.index_file
-    meta_file = Path(config.base_path + f"{meta_name}.json")
-    meta_file.write_text(
+    config.index_file.write_text(
         json.dumps([asdict(e) for e in page_entries], ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
@@ -123,8 +121,7 @@ def parent_of(slug: str) -> str | None:
 
 
 def load_index(config: CrawlConfig) -> list[PageEntry]:
-    index_file = Path(config.base_path + f"{config.index_file}.json")
-    index_json = json.loads(index_file.read_text(encoding="utf-8"))
+    index_json = json.loads(config.index_file.read_text(encoding="utf-8"))
     return [PageEntry(**d) for d in index_json]
 
 

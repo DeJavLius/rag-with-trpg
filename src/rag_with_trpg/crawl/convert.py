@@ -12,7 +12,7 @@ def converter(
 ) -> list[str]:
     exclude_list: list[str] = []
 
-    if not len(md_files) > 0 or config.re_create:
+    if not len(md_files) > 0 or config.do_create:
         clear_dir(config.md_path)
         exclude_list = _extracting(config, raw_files)
 

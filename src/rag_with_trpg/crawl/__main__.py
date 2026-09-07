@@ -12,7 +12,7 @@ from rag_with_trpg.crawl.index_mapped import (
 def main() -> None:
     print("[0] crawl: config environment load")
     load_config()
-    config = CrawlConfig.from_env()
+    config = CrawlConfig.from_config()
     init_files = list(config.raw_path.rglob("*.html"))
 
     print("[1] crawl: start raw file check and crawling")
@@ -32,7 +32,7 @@ def main() -> None:
     print("[5] result: file exclude checking")
     prev_exclude_count, exclude_files = exclude_file_check(config)
 
-    if config.re_create and (
+    if config.do_create and (
         (len(execute_exclude) != prev_exclude_count)
         or file_check(execute_exclude, exclude_files)
     ):

@@ -145,11 +145,11 @@ def test_crawler_recrawls_when_no_files(monkeypatch, tmp_config: CrawlConfig):
 def test_crawler_recrawls_when_flag_set(
     monkeypatch, make_config, raw_files: list[Path]
 ):
-    """RE_CRAWL=1 이면 파일이 있어도 다시 긁는다."""
+    """DO_CRAWL=1 이면 파일이 있어도 다시 긁는다."""
     called: list[bool] = []
     monkeypatch.setattr(crawl_mod, "_target_crawl", lambda c: called.append(True))
 
-    crawler(make_config(re_crawl=True), raw_files)
+    crawler(make_config(do_crawl=True), raw_files)
 
     assert called == [True]
 

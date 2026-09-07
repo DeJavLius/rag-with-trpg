@@ -128,17 +128,20 @@ def test_page_entry_is_frozen(corpus_config: CrawlConfig):
 
 
 # ─── mapper → save_index → load_meta 왕복 (D-35) ─────────────────────
-def test_mapper_writes_index_named_by_meta_file(corpus_config: CrawlConfig):
-    """파일명은 META_FILE 을 따른다. 코드에 파일명이 박히면 .env 가 무의미해진다."""
+def test_mapper_writes_index_at_configured_path(corpus_config: CrawlConfig):
+    """저장 위치는 설정의 index_file 그 자체다.
+
+    코드가 base_path + 이름 + ".json" 으로 다시 조립하면 조립 규칙이 두 곳에 생기고,
+    한쪽만 바뀌면 조용히 다른 파일에 쓴다 (09-07 파일명 드리프트).
+    """
     raw_files = sorted(corpus_config.raw_path.rglob("*.html"))
     converter(corpus_config, raw_files, [])
     md_files = sorted(corpus_config.md_path.rglob("*.md"))
 
     mapper(corpus_config, raw_files, md_files)
 
-    assert (
-        Path(corpus_config.base_path) / f"{corpus_config.index_file}.json"
-    ).is_file()
+    assert corpus_config.index_file.is_file()
+    assert corpus_config.index_file.suffix == ".json"
 
 
 def test_index_round_trip_preserves_entries(corpus_config: CrawlConfig):
@@ -162,9 +165,7 @@ def test_index_is_written_as_readable_utf8(corpus_config: CrawlConfig):
     converter(corpus_config, raw_files, [])
     mapper(corpus_config, raw_files, sorted(corpus_config.md_path.rglob("*.md")))
 
-    text = (
-        Path(corpus_config.base_path) / f"{corpus_config.index_file}.json"
-    ).read_text(encoding="utf-8")
+    text = corpus_config.index_file.read_text(encoding="utf-8")
 
     assert "\\u" not in text
     assert "\n" in text
@@ -189,8 +190,8 @@ def test_exclude_file_check_counts_index_pages(corpus_config: CrawlConfig):
 
 
 @pytest.fixture(scope="module")
-def entries(meta_path: Path) -> list[dict]:
-    return json.loads(meta_path.read_text(encoding="utf-8"))
+def entries(index_path: Path) -> list[dict]:
+    return json.loads(index_path.read_text(encoding="utf-8"))
 
 
 def test_index_entry_count_matches_raw(entries: list[dict], raw_files: list[Path]):

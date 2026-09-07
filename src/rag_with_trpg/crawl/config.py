@@ -1,31 +1,29 @@
 from dataclasses import dataclass
-from pathlib import Path
 
-from rag_with_trpg.config import require_env, require_path
+from rag_with_trpg.config import Config, require_bool_env, require_env
 
 
 @dataclass(frozen=True)
-class CrawlConfig:
+class CrawlConfig(Config):
     site_url: str
     url_keyword: str
     user_agent: str
-    base_path: str
-    raw_path: Path
-    md_path: Path
-    index_file: str
-    re_crawl: bool
-    re_create: bool
+    do_crawl: bool
+    do_create: bool
 
     @classmethod
-    def from_env(cls) -> "CrawlConfig":
+    def from_config(cls) -> "CrawlConfig":
+        config: Config = Config.from_config()
         return cls(
+            base_path=config.base_path,
+            raw_path=config.raw_path,
+            md_path=config.md_path,
+            index_file=config.index_file,
+            meta_file=config.meta_file,
+            meta_result_file=config.meta_result_file,
             site_url=require_env("DW_SITE").rstrip("/"),
             url_keyword=require_env("URL_KEYWORD"),
             user_agent=require_env("USER_AGENT"),
-            base_path=require_env("CORPORA_DUNGEONWORLD_PATH"),
-            raw_path=require_path("CORPORA_DUNGEONWORLD_PATH", "raw"),
-            md_path=require_path("CORPORA_DUNGEONWORLD_PATH", "md"),
-            index_file=require_env("INDEX_FILE"),
-            re_crawl=require_env("RE_CRAWL") == "1",
-            re_create=require_env("RE_CREATE") == "1",
+            do_crawl=require_bool_env("DO_CRAWL"),
+            do_create=require_bool_env("DO_CREATE"),
         )

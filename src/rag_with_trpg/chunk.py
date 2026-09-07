@@ -12,7 +12,7 @@
 # ├──────────────┼────────────────────────────────────────────────┤
 # │ 입력 가드      │ overlap >= size 면 ValueError                   │
 # └──────────────┴────────────────────────────────────────────────┘
-def chunk_fixed(text: str, size: int, overlap: int = 0) -> list[str]:
+def chunk_fixed(text: str, size: int, overlap: int = 0, min_chunk: int = 0) -> list[str]:
     if overlap >= size:
         raise ValueError("Overlap must be less than size")
 
