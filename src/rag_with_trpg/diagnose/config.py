@@ -7,15 +7,27 @@ from rag_with_trpg.config import require_env, require_path
 @dataclass(frozen=True)
 class DiagnoseConfig:
     base_path: str
-    meta_file: str
+    index_file: Path
     md_path: Path
-    diagnose_file: str
+    meta_file: Path
+    meta_result_file: Path
+    embed_test_model: str
+    embed_test_max_seq: int
 
     @classmethod
     def from_env(cls) -> "DiagnoseConfig":
         return cls(
             base_path=require_env("CORPORA_DUNGEONWORLD_PATH"),
-            meta_file=require_env("META_FILE"),
+            index_file=require_path(
+                "CORPORA_DUNGEONWORLD_PATH", f"{require_env("INDEX_FILE")}.json"
+            ),
             md_path=require_path("CORPORA_DUNGEONWORLD_PATH", "md"),
-            diagnose_file=require_env("DIAGNOSE_FILE")
+            meta_file=require_path(
+                "CORPORA_DUNGEONWORLD_PATH", f"{require_env("META_FILE")}.json"
+            ),
+            meta_result_file=require_path(
+                "CORPORA_DUNGEONWORLD_PATH", f"{require_env("META_RESULT_FILE")}.json"
+            ),
+            embed_test_model=require_env("EMBED_TEST_MODEL"),
+            embed_test_max_seq=int(require_env("EMBED_TEST_MAX_SEQ")),
         )

@@ -17,7 +17,7 @@ ENV = {
     "URL_KEYWORD": "/view/dwtemporary/",
     "USER_AGENT": "rag-with-trpg-test",
     "CORPORA_DUNGEONWORLD_PATH": "corpora/dungeonworld/",
-    "META_FILE": "meta",
+    "INDEX_FILE": "index",
     "RE_CRAWL": "0",
     "RE_CREATE": "0",
 }
@@ -33,7 +33,7 @@ def env(monkeypatch):
 
 # ─── require_env — 빈 값이 조용히 통과하지 않는다 ─────────────────────
 def test_require_env_returns_value(env):
-    assert require_env("META_FILE") == "meta"
+    assert require_env("INDEX_FILE") == "index"
 
 
 def test_require_env_raises_when_unset(monkeypatch):
@@ -57,9 +57,9 @@ def test_require_env_rejects_blank(monkeypatch, value: str):
 
 
 def test_require_env_strips_surrounding_space(monkeypatch):
-    monkeypatch.setenv("PADDED", "  meta  ")
+    monkeypatch.setenv("PADDED", "  index  ")
 
-    assert require_env("PADDED") == "meta"
+    assert require_env("PADDED") == "index"
 
 
 # ─── require_path — 프로젝트 밖을 가리키지 않는다 ──────────────────────
@@ -95,7 +95,7 @@ def test_from_env_reads_every_field(env):
     assert config.site_url == "https://sites.google.com"
     assert config.url_keyword == "/view/dwtemporary/"
     assert config.user_agent == "rag-with-trpg-test"
-    assert config.meta_file == "meta"
+    assert config.index_file == "index"
     assert config.raw_path == ROOT / "corpora" / "dungeonworld" / "raw"
     assert config.md_path == ROOT / "corpora" / "dungeonworld" / "md"
 
@@ -128,4 +128,4 @@ def test_config_is_frozen(env):
     config = CrawlConfig.from_env()
 
     with pytest.raises(FrozenInstanceError):
-        config.meta_file = "other"  # type: ignore[misc]
+        config.index_file = "other"  # type: ignore[misc]

@@ -8,10 +8,10 @@ from conftest import EXPECTED_EXCLUDED, EXPECTED_MD, EXPECTED_PAGES, INDEX_TITLE
 
 from rag_with_trpg.crawl.config import CrawlConfig
 from rag_with_trpg.crawl.convert import converter
-from rag_with_trpg.crawl.meta_mapped import (
+from rag_with_trpg.crawl.index_mapped import (
     PageEntry,
     exclude_file_check,
-    load_meta,
+    load_index,
     mapper,
     parent_of,
     slug_of,
@@ -22,7 +22,7 @@ from rag_with_trpg.crawl.meta_mapped import (
 title: claude 작성 python script — 테스트 본문
 content: D-20 조건부 (2026-09-04 개정). 「무엇을 잠그나」와 기대값은 직접 정하고,
          pytest 문법·픽스처 배선·assert 표현은 AI 가 적었다.
-         meta_mapped.py 소관 — D-35 페이지 인덱스. 각 테스트가 잠그는 결정 번호를 남긴다.
+         index_mapped.py 소관 — D-35 페이지 인덱스. 각 테스트가 잠그는 결정 번호를 남긴다.
 """
 
 KEYWORD = "https://sites.google.com/view/dwtemporary/"
@@ -136,7 +136,9 @@ def test_mapper_writes_index_named_by_meta_file(corpus_config: CrawlConfig):
 
     mapper(corpus_config, raw_files, md_files)
 
-    assert (Path(corpus_config.base_path) / f"{corpus_config.meta_file}.json").is_file()
+    assert (
+        Path(corpus_config.base_path) / f"{corpus_config.index_file}.json"
+    ).is_file()
 
 
 def test_index_round_trip_preserves_entries(corpus_config: CrawlConfig):
@@ -148,7 +150,7 @@ def test_index_round_trip_preserves_entries(corpus_config: CrawlConfig):
     converter(corpus_config, raw_files, [])
     mapper(corpus_config, raw_files, sorted(corpus_config.md_path.rglob("*.md")))
 
-    loaded = load_meta(corpus_config)
+    loaded = load_index(corpus_config)
 
     assert len(loaded) == len(raw_files)
     assert all(isinstance(e, PageEntry) for e in loaded)
@@ -161,7 +163,7 @@ def test_index_is_written_as_readable_utf8(corpus_config: CrawlConfig):
     mapper(corpus_config, raw_files, sorted(corpus_config.md_path.rglob("*.md")))
 
     text = (
-        Path(corpus_config.base_path) / f"{corpus_config.meta_file}.json"
+        Path(corpus_config.base_path) / f"{corpus_config.index_file}.json"
     ).read_text(encoding="utf-8")
 
     assert "\\u" not in text

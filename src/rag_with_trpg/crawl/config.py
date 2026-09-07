@@ -12,7 +12,7 @@ class CrawlConfig:
     base_path: str
     raw_path: Path
     md_path: Path
-    meta_file: str
+    index_file: str
     re_crawl: bool
     re_create: bool
 
@@ -25,7 +25,7 @@ class CrawlConfig:
             base_path=require_env("CORPORA_DUNGEONWORLD_PATH"),
             raw_path=require_path("CORPORA_DUNGEONWORLD_PATH", "raw"),
             md_path=require_path("CORPORA_DUNGEONWORLD_PATH", "md"),
-            meta_file=require_env("META_FILE"),
+            index_file=require_env("INDEX_FILE"),
             re_crawl=require_env("RE_CRAWL") == "1",
             re_create=require_env("RE_CREATE") == "1",
         )

@@ -4,6 +4,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[2]
+I_F = "INDEX_FILE"
+M_F = "META_FILE"
+M_R_F = "META_RESULT_FILE"
 
 """
 title: claude 작성 python script
@@ -15,6 +18,14 @@ def load_config() -> None:
     """공용 설정을 먼저 읽고, 로컬 비밀값이 덮어쓰게 한다."""
     load_dotenv(ROOT / ".env.shared")
     load_dotenv(ROOT / ".env", override=True)
+
+    if (
+        len({os.getenv(I_F).strip(), os.getenv(M_F).strip(), os.getenv(M_R_F).strip()})
+        < 3
+    ):
+        raise RuntimeError(
+            f"환경변수 {I_F}, {M_F}, {M_R_F} 중 같은 값이 있습니다. 각각의 파일명을 지정해 주세요."
+        )
 
 
 def require_env(name: str) -> str:

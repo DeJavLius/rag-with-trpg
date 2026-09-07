@@ -64,9 +64,7 @@ def fetch_handler(config: CrawlConfig, link: str) -> str:
 
 
 def _fetch(url: str, user: str) -> str:
-    r = httpx.get(
-        url, follow_redirects=True, timeout=5, headers={"User-Agent": user}
-    )
+    r = httpx.get(url, follow_redirects=True, timeout=5, headers={"User-Agent": user})
     r.raise_for_status()
     return r.text
 

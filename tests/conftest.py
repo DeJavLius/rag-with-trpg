@@ -84,7 +84,7 @@ def make_config(tmp_path: Path, raw_dir: Path):
             base_path=f"{tmp_path}/",
             raw_path=raw_dir,
             md_path=tmp_path / "md",
-            meta_file="meta",
+            index_file="index",
             re_crawl=re_crawl,
             re_create=re_create,
         )
@@ -131,7 +131,7 @@ def corpus_config(corpus: Path) -> CrawlConfig:
         base_path=f"{corpus}/",
         raw_path=corpus / "raw",
         md_path=corpus / "md",
-        meta_file="meta",
+        index_file="index",
         re_crawl=False,
         re_create=False,
     )
@@ -158,4 +158,4 @@ def meta_path(corpora_root: Path) -> Path:
     from rag_with_trpg.config import load_config
 
     load_config()
-    return corpora_root / f"{os.environ['META_FILE']}.json"
+    return corpora_root / f"{os.environ['INDEX_FILE']}.json"
