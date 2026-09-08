@@ -5,7 +5,9 @@ from pathlib import Path
 
 from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 
+from rag_with_trpg.crawl.convert import extract
 from rag_with_trpg.crawl.index_mapped import PageEntry
+from rag_with_trpg.crawl.util import header_counting
 from rag_with_trpg.diagnose.config import DiagnoseConfig
 
 
@@ -33,7 +35,7 @@ class DiagnoseResult:
 
     def print_result(self) -> None:
         print(
-            f"결과 출력: 총 {self.count} 페이지\n"
+            f"[결과 출력]: 총 {self.count} 페이지\n"
             + f"페이지별 자/토큰(page size / token size) 비율 > 평균: {self.average_cpt} | 최소: {self.min_cpt} | 최대: {self.max_cpt}\n"
             + f"상위/하위 10% 비율 > 상위 10%: {self.upper_ten_percent_cpt} | 하위 10%: {self.lower_ten_percent_cpt}\n"
             + f"모델 사이즈({self.max_sequence_length})에 따른 안전 토큰: {self.safe_chars}\n"
@@ -51,10 +53,10 @@ def diagnose(config: DiagnoseConfig):
         PageEntry(**j)
         for j in json.loads(config.index_file.read_text(encoding="utf-8"))
     ]
-    index_pages = list(filter(lambda x: x.excluded is None, index_pages))
+    extract_pages = list(filter(lambda x: x.excluded is None, index_pages))
 
     print("[2] diagnose: start round-trip check")
-    meta_list = meta_analyze(config, tokenizer, index_pages)
+    meta_list = meta_analyze(config, tokenizer, extract_pages)
     config.meta_file.write_text(
         json.dumps([asdict(e) for e in meta_list], ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -81,7 +83,56 @@ def diagnose(config: DiagnoseConfig):
     )
 
     print("[4] diagnose: final result")
+    index_md_result = index_file_diagnose(config.base_path, index_pages)
+    print(
+        f"[정보 출력]: 엔트리 {len(index_pages)}건, excluded {len(index_pages) - len(extract_pages)}건\n"
+        + f"markdown {len(extract_pages)}건, slug 고유 여부: {slug_check(index_pages)} \n"
+        + f"markdown 파일 실존 여부: {md_file_exists(config.base_path, extract_pages)} \n"
+        + f"제외 건 markdown 상세: \n{print_index_md(index_md_result)} \n"
+    )
     result.print_result()
+
+
+def slug_check(index_pages: list[PageEntry]) -> int:
+    result_set = set()
+    for index_page in index_pages:
+        result_set.add(index_page.slug)
+    return len(index_pages) == len(result_set)
+
+
+def md_file_exists(base_path: str, extract_pages: list[PageEntry]) -> bool:
+    exist = True
+    for page in extract_pages:
+        md_file = Path(base_path + page.md)
+        exist = md_file.exists()
+    return exist
+
+
+def index_file_diagnose(
+    base_path: str, index_pages: list[PageEntry]
+) -> list[DiagnoseMeta]:
+    index_meta_list = []
+    for index_page in index_pages:
+        if index_page.excluded == "index":
+            raw_file = Path(base_path + index_page.raw)
+            html = raw_file.read_text(encoding="utf-8")
+            title, content = extract(html)
+            md_total, md_head_count = header_counting(content)
+            index_meta_list.append(
+                DiagnoseMeta(title=title, chars=md_total, headings=md_head_count)
+            )
+        else:
+            continue
+    return index_meta_list
+
+
+def print_index_md(index_meta_list: list[DiagnoseMeta]) -> str:
+    return "\n".join(
+        [
+            f"title: {meta.title} - chars: {meta.chars}, headings: {meta.headings}"
+            for meta in index_meta_list
+        ]
+    )
 
 
 def meta_analyze(

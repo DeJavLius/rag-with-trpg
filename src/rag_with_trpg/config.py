@@ -38,7 +38,8 @@ class Config:
 
 def load_config() -> None:
     """공용 설정을 먼저 읽고, 로컬 비밀값이 덮어쓰게 한다."""
-    load_dotenv(ROOT / ".env.shared")
+    load_dotenv(ROOT / ".env.execute")
+    load_dotenv(ROOT / ".env.shared", override=True)
     load_dotenv(ROOT / ".env", override=True)
 
     if len({require_env(I_F), require_env(M_F), require_env(M_R_F)}) < 3:
@@ -66,7 +67,7 @@ def require_env(name: str) -> str:
 
     if not value:
         raise RuntimeError(
-            f"환경변수 {name} 가 비어 있습니다. .env.shared / .env 를 확인하세요."
+            f"환경변수 {name} 가 비어 있습니다. .env.shared / .env / .env.execute 를 확인하세요."
         )
 
     return value
