@@ -9,4 +9,16 @@ class Chunk:
     start: int  # 원문 글자 오프셋 (닫힌 구간 시작)
     end: int  # 원문 글자 오프셋 (열린 구간 끝)
     text: str  # == source[start:end] 여야 한다   <- 이것도 계약이다
-    chars_nonspace: int
+    chars_nonspace: int  # 공백 없는 text 길이
+
+
+@dataclass(frozen=True, kw_only=True)
+class ChunkSnapshot(Chunk):
+    model_name: str
+    chunks: int
+    chunk_size: int
+    chunk_overlap: int
+    chunk_min: int
+    semantic_percentile: int
+    semantic_buffer: int
+    date: str

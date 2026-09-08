@@ -1,4 +1,5 @@
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import pytest
 
@@ -46,6 +47,30 @@ def env(monkeypatch):
     for key, value in ENV.items():
         monkeypatch.setenv(key, value)
     return monkeypatch
+
+
+@pytest.fixture
+def env_root(tmp_path: Path, monkeypatch):
+    """load_config 이 읽는 ROOT 를 임시 디렉터리로 돌리고, .env 파일을 써 주는 팩토리.
+
+    3ffe047 에서 .env.shared 가 override=True 로 바뀌어, monkeypatch 로 세운
+    환경변수는 .env.shared 에 있는 키를 더 이상 덮지 못한다. 우선순위를 잠그려면
+    환경변수가 아니라 파일 쪽에서 재현해야 한다.
+
+    실제 .env / .env.shared / .env.execute 를 읽지 않으므로 로컬 설정 상태에
+    결과가 흔들리지 않는다. 안 쓴 파일은 없는 파일이고, load_dotenv 는 무해하게 지난다.
+    """
+    monkeypatch.setattr("rag_with_trpg.config.ROOT", tmp_path)
+
+    def _write(name: str, **values: str) -> Path:
+        path = tmp_path / name
+        path.write_text(
+            "".join(f"{key}={value}\n" for key, value in values.items()),
+            encoding="utf-8",
+        )
+        return path
+
+    return _write
 
 
 # ─── require_env — 빈 값이 조용히 통과하지 않는다 ─────────────────────
@@ -169,26 +194,73 @@ def test_config_paths_are_under_root(env):
 
 
 # ─── load_config — 파일명 중복을 멈춘다 ────────────────────────────
-def test_load_config_rejects_duplicate_file_names(monkeypatch, env):
-    """META_FILE 이 INDEX_FILE 과 같으면 인덱스가 계측 결과에 덮인다."""
-    monkeypatch.setenv("META_FILE", "index")
+def test_load_config_rejects_duplicate_file_names(env, env_root):
+    """META_FILE 이 INDEX_FILE 과 같으면 인덱스가 계측 결과에 덮인다.
+
+    중복은 .env.shared 로 만든다. override=True 라서 monkeypatch 로는 못 만든다 —
+    검사 대상이 「파일에 중복이 있으면 멈추나」이므로 파일 쪽이 원래 맞는 자리다.
+    META_RESULT_FILE 은 이 파일에 없으므로 env 픽스처의 "diagnose" 가 남는다.
+    """
+    env_root(".env.shared", INDEX_FILE="index", META_FILE="index")
 
     with pytest.raises(RuntimeError):
         load_config()
 
 
-def test_load_config_restores_values_from_shared_file(monkeypatch, env):
-    """지워진 값은 .env.shared 에서 되돌아온다 — 그게 이 함수의 일이다.
-
-    중복 검사가 monkeypatch 값으로 도는 이유이기도 하다: .env.shared 는
-    override=False 로 읽으므로 이미 세워진 환경변수를 덮지 않는다.
-    """
+def test_load_config_restores_values_from_shared_file(monkeypatch, env, env_root):
+    """지워진 값은 .env.shared 에서 되돌아온다 — 그게 이 함수의 일이다."""
+    env_root(".env.shared", META_RESULT_FILE="diagnose")
     monkeypatch.delenv("META_RESULT_FILE", raising=False)
 
     load_config()
 
-    assert require_env("META_RESULT_FILE")
-    assert require_env("META_FILE") == "meta"  # monkeypatch 값이 살아 있다
+    assert require_env("META_RESULT_FILE") == "diagnose"
+
+
+# ─── load_config — .env 3종의 우선순위 ─────────────────────────────
+#
+# .env > .env.shared > 프로세스 환경변수 > .env.execute
+#
+# 3ffe047 에서 .env.shared 가 override=True 가 되며 이 순서가 확정됐다.
+# 순서가 또 바뀌면 여기서 먼저 깨진다 — 09-08 처럼 무관한 테스트가
+# 조용히 통과하지 않게 만드는 것이 이 세 개의 일이다.
+
+
+def test_shared_file_overrides_process_env(monkeypatch, env, env_root):
+    """공용 설정은 이미 세워진 환경변수를 덮는다 (override=True).
+
+    셸에 남은 옛 값이 살아남으면 엉뚱한 파일을 가리키면서 에러도 안 난다.
+    """
+    monkeypatch.setenv("META_FILE", "stale")
+    env_root(".env.shared", META_FILE="meta")
+
+    load_config()
+
+    assert require_env("META_FILE") == "meta"
+
+
+def test_execute_file_yields_to_process_env(monkeypatch, env, env_root):
+    """실행 파라미터는 환경변수가 이긴다 (override=False).
+
+    `CHUNK_SIZE=900 uv run ...` 로 한 번만 바꿔 돌리는 실험이 가능해야 한다.
+    .env.execute 가 덮어버리면 그 실험이 안 된다.
+    """
+    monkeypatch.setenv("CHUNK_SIZE", "900")
+    env_root(".env.execute", CHUNK_SIZE="600")
+
+    load_config()
+
+    assert require_env("CHUNK_SIZE") == "900"
+
+
+def test_local_env_overrides_shared_file(env, env_root):
+    """로컬 .env 가 최우선이다 — 비밀값·개인 설정이 공용 설정을 덮는다."""
+    env_root(".env.shared", USER_AGENT="shared-agent")
+    env_root(".env", USER_AGENT="local-agent")
+
+    load_config()
+
+    assert require_env("USER_AGENT") == "local-agent"
 
 
 # ─── from_config — 필드 누락을 잡는다 ──────────────────────────────

@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Self
 
 from dotenv import load_dotenv
 
@@ -15,7 +16,7 @@ content: 작업 규칙에 따라 crawl 본문 작성은 요청하지 않고 env 
 """
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Config:
     base_path: str
     raw_path: Path
@@ -25,15 +26,29 @@ class Config:
     meta_result_file: Path
 
     @classmethod
-    def from_config(cls) -> "Config":
-        return cls(
-            base_path=require_env("CORPORA_DUNGEONWORLD_PATH"),
-            raw_path=pre_require_path("raw"),
-            md_path=pre_require_path("md"),
-            index_file=require_json_env("INDEX_FILE"),
-            meta_file=require_json_env("META_FILE"),
-            meta_result_file=require_json_env("META_RESULT_FILE"),
-        )
+    def from_config(cls) -> Self:
+        """
+        `**` 두 개를 한 호출에 펼치므로, 서브클래스가 공통 필드와 같은 키를 내면
+        TypeError(multiple values) 로 즉시 죽는다 — 조용히 덮어쓰지 않는다.
+        """
+        return cls(**cls._base_kwargs(), **cls._extra_kwargs())
+
+    @classmethod
+    def _base_kwargs(cls) -> dict[str, Any]:
+        """공통 필드의 환경변수 해석. 이 조립을 아는 유일한 곳이다."""
+        return {
+            "base_path": require_env("CORPORA_DUNGEONWORLD_PATH"),
+            "raw_path": pre_require_path("raw"),
+            "md_path": pre_require_path("md"),
+            "index_file": require_json_env("INDEX_FILE"),
+            "meta_file": require_json_env("META_FILE"),
+            "meta_result_file": require_json_env("META_RESULT_FILE"),
+        }
+
+    @classmethod
+    def _extra_kwargs(cls) -> dict[str, Any]:
+        """서브클래스가 추가한 필드만 돌려주는 훅. 베이스는 추가분이 없다."""
+        return {}
 
 
 def load_config() -> None:
@@ -46,6 +61,12 @@ def load_config() -> None:
         raise RuntimeError(
             f"환경변수 {I_F}, {M_F}, {M_R_F} 중 같은 값이 있습니다. 각각의 파일명을 지정해 주세요."
         )
+
+
+def get_env(name: str) -> str | None:
+    """미설정, 빈 문자열, 공백만 입력을 모두 걸러낸 환경변수 값을 돌려준다."""
+    value = os.getenv(name, "").strip()
+    return None if not value else value
 
 
 def require_json_env(name: str) -> Path:
