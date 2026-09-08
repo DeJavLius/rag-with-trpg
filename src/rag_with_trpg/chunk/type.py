@@ -15,7 +15,7 @@ class Chunk:
 @dataclass(frozen=True, kw_only=True)
 class ChunkSnapshot(Chunk):
     model_name: str
-    chunks: int
+    chunks: list[Chunk]
     chunk_size: int
     chunk_overlap: int
     chunk_min: int

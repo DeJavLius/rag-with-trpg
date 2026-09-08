@@ -34,6 +34,7 @@ ENV = {
     "META_RESULT_FILE": "diagnose",
     "EMBED_TEST_MODEL": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "EMBED_TEST_MAX_SEQ": "128",
+    "MODEL_LOCAL_ONLY": "1",
     "DO_CRAWL": "0",
     "DO_CREATE": "0",
     "DO_DIAGNOSE": "0",
@@ -284,6 +285,7 @@ def test_diagnose_config_reads_every_field(env):
 
     assert config.embed_test_model.endswith("paraphrase-multilingual-MiniLM-L12-v2")
     assert config.embed_test_max_seq == 128
+    assert config.model_local_only is True
     assert config.meta_file == CORPORA / "meta.json"
     assert config.meta_result_file == CORPORA / "diagnose.json"
     assert config.do_diagnose is False

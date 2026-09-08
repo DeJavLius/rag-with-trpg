@@ -45,7 +45,7 @@ class DiagnoseResult:
 
 def diagnose(config: DiagnoseConfig):
     tokenizer: TokenizersBackend | SentencePieceBackend = AutoTokenizer.from_pretrained(
-        config.embed_test_model
+        config.embed_test_model, local_files_only=config.model_local_only
     )
 
     print("[1] diagnose: markdown files & index load")
