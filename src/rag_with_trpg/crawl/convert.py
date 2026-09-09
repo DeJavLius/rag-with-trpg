@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import clear_dir, save_file, title_decision
+from rag_with_trpg.crawl.util import title_decision
+from rag_with_trpg.util import clear_dir, save_file
 
 
 def converter(

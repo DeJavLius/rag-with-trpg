@@ -16,9 +16,4 @@ class Chunk:
 class ChunkSnapshot(Chunk):
     model_name: str
     chunks: list[Chunk]
-    chunk_size: int
-    chunk_overlap: int
-    chunk_min: int
-    semantic_percentile: int
-    semantic_buffer: int
-    date: str
+    finish_date: str

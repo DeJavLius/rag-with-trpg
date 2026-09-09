@@ -17,6 +17,6 @@ class ChunkConfig(Config):
             "chunk_size": int(get_env("CHUNK_SIZE")),
             "chunk_overlap": int(get_env("CHUNK_OVERLAP")),
             "chunk_min": int(get_env("CHUNK_MIN")),
-            "SEMANTIC_PERCENTILE": int(get_env("SEMANTIC_PERCENTILE")),
-            "SEMANTIC_BUFFER": int(get_env("SEMANTIC_BUFFER")),
+            "semantic_percentile": int(get_env("SEMANTIC_PERCENTILE")),
+            "semantic_buffer": int(get_env("SEMANTIC_BUFFER")),
         }

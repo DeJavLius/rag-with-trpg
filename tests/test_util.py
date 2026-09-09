@@ -3,14 +3,13 @@ from pathlib import Path
 import pytest
 from bs4 import BeautifulSoup
 
-from rag_with_trpg.crawl.util import (
+from rag_with_trpg.crawl.util import md_head_counter, title_decision
+from rag_with_trpg.util import (
     clear_dir,
     find_file,
     header_counting,
-    md_head_counter,
     save_file,
     serialize,
-    title_decision,
 )
 
 """

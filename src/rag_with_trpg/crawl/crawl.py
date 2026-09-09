@@ -6,7 +6,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import clear_dir, save_file
+from rag_with_trpg.util import clear_dir, save_file
 
 
 def crawler(config: CrawlConfig, raw_files: list[Path]):

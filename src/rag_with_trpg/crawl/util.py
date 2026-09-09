@@ -1,27 +1,12 @@
-import shutil
 from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-HEAD_SECTIONS: str = "###### "
+from rag_with_trpg.util import header_counting
+
+# crawl 도메인 전용 헬퍼. 최상위 util.py 는 「도메인을 모르는 순수 헬퍼」로 두고,
+# bs4 · 사이트 <title> 규약(D-28) · 마크다운 파일을 아는 것만 여기 남긴다.
 SITE_TITLE_SEP = " - "
-
-
-def save_file(file_name: str, path: Path, content: str):
-    print(f"저장 확인 - 파일명: {file_name}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-
-
-def clear_dir(path: Path) -> None:
-    if not path.is_dir():
-        return
-
-    for child in path.iterdir():
-        if child.is_dir() and not child.is_symlink():
-            shutil.rmtree(child)
-        else:
-            child.unlink()
 
 
 def title_decision(soup: BeautifulSoup) -> str:
@@ -39,27 +24,3 @@ def md_head_counter(path: Path) -> tuple[str, int, list[int]]:
     markdown = path.read_text(encoding="utf-8")
     md_total, md_head_count = header_counting(markdown)
     return title, md_total, md_head_count
-
-
-def header_counting(content: str) -> tuple[int, list[int]]:
-    total = len(content)
-
-    head_count: list[int] = [0 for _ in range(6)]
-    for h in range(6):
-        header = HEAD_SECTIONS[h:]
-        head_count[5 - h] = content.count(header)
-        content = content.replace(header, "")
-
-    return total, head_count
-
-
-def serialize(values: list) -> str:
-    return "".join([f"h{i + 1}: ({v}) " if v > 0 else "" for i, v in enumerate(values)])
-
-
-def find_file(path_list: list[Path], keyword: str) -> Path | None:
-    for p in path_list:
-        if p.stem == keyword:
-            return p
-
-    return None

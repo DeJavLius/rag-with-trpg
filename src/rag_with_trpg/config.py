@@ -24,6 +24,7 @@ class Config:
     index_file: Path
     meta_file: Path
     meta_result_file: Path
+    chunk_result_file: Path
 
     @classmethod
     def from_config(cls) -> Self:
@@ -43,6 +44,7 @@ class Config:
             "index_file": require_json_env("INDEX_FILE"),
             "meta_file": require_json_env("META_FILE"),
             "meta_result_file": require_json_env("META_RESULT_FILE"),
+            "chunk_result_file": require_json_env("CHUNK_RESULT_FILE"),
         }
 
     @classmethod

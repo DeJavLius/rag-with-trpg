@@ -7,8 +7,8 @@ from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 
 from rag_with_trpg.crawl.convert import extract
 from rag_with_trpg.crawl.index_mapped import PageEntry
-from rag_with_trpg.crawl.util import header_counting
 from rag_with_trpg.diagnose.config import DiagnoseConfig
+from rag_with_trpg.util import header_counting, load_json
 
 
 @dataclass(kw_only=True)
@@ -49,10 +49,7 @@ def diagnose(config: DiagnoseConfig):
     )
 
     print("[1] diagnose: markdown files & index load")
-    index_pages = [
-        PageEntry(**j)
-        for j in json.loads(config.index_file.read_text(encoding="utf-8"))
-    ]
+    index_pages = load_json(PageEntry, config, "index_file")
     extract_pages = list(filter(lambda x: x.excluded is None, index_pages))
 
     print("[2] diagnose: start round-trip check")

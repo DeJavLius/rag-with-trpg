@@ -7,12 +7,8 @@ from bs4 import BeautifulSoup
 from bs4.element import AttributeValueList
 
 from rag_with_trpg.crawl.config import CrawlConfig
-from rag_with_trpg.crawl.util import (
-    find_file,
-    md_head_counter,
-    serialize,
-    title_decision,
-)
+from rag_with_trpg.crawl.util import md_head_counter, title_decision
+from rag_with_trpg.util import find_file, serialize
 
 """
 title: claude 작성 python script — 시그니처 전용

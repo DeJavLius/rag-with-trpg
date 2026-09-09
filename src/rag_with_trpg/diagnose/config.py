@@ -9,7 +9,9 @@ class DiagnoseConfig(Config):
     embed_test_model: str
     embed_test_max_seq: int
     model_local_only: bool
+    model_index: int
     do_diagnose: bool
+    do_compare: bool
     do_model_compare: bool
 
     @classmethod
@@ -18,6 +20,8 @@ class DiagnoseConfig(Config):
             "embed_test_model": require_env("EMBED_TEST_MODEL"),
             "embed_test_max_seq": int(require_env("EMBED_TEST_MAX_SEQ")),
             "model_local_only": require_bool_env("MODEL_LOCAL_ONLY"),
+            "model_index": int(require_env("MODEL_INDEX")),
             "do_diagnose": require_bool_env("DO_DIAGNOSE"),
+            "do_compare": require_bool_env("DO_COMPARE"),
             "do_model_compare": require_bool_env("DO_MODEL_COMPARE"),
         }
